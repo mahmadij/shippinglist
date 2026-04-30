@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { format, formatDistanceToNow, parseISO, isAfter, startOfDay } from 'date-fns';
-import { ShoppingCart, CalendarIcon, X } from 'lucide-react';
+import { ShoppingCart, CalendarIcon, X, Pencil } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -207,12 +208,13 @@ export default function DashboardClient({ lists, allUsers }: Props) {
                 <TableHead>Created at</TableHead>
                 <TableHead>Last updated by</TableHead>
                 <TableHead>Last updated</TableHead>
+                <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                     No lists match the current filters.
                   </TableCell>
                 </TableRow>
@@ -232,6 +234,14 @@ export default function DashboardClient({ lists, allUsers }: Props) {
                       <span title={format(parseISO(list.updatedAt), 'MMM d, yyyy HH:mm')}>
                         {formatDistanceToNow(parseISO(list.updatedAt), { addSuffix: true })}
                       </span>
+                    </TableCell>
+                    <TableCell className="pr-4">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/dashboard/shopping-list/${list.id}`}>
+                          <Pencil className="h-3.5 w-3.5" />
+                          <span className="sr-only">Edit</span>
+                        </Link>
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))

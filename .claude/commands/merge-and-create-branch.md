@@ -1,0 +1,1 @@
+stage and commit any changes in the current branch with a suitable commit message based on the code change. then merge the current branch into the $1 branch and resolve any issues off the back of that merge. then create a new branch from the main branch called $2
