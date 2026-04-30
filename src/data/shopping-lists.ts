@@ -3,6 +3,21 @@ import { shoppingLists, listMembers, listItems, users } from '@/db/schema';
 import { eq, count } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 
+export async function createShoppingList(name: string, userId: number) {
+  const [list] = await db
+    .insert(shoppingLists)
+    .values({ name, createdBy: userId, updatedBy: userId })
+    .returning();
+
+  await db.insert(listMembers).values({
+    listId: list.id,
+    userId,
+    role: 'owner',
+  });
+
+  return list;
+}
+
 export async function getShoppingListsForUser(userId: number) {
   const createdByUser = alias(users, 'created_by_user');
   const updatedByUser = alias(users, 'updated_by_user');
