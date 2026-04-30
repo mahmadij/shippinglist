@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -52,14 +53,17 @@ export default function ShareListDialog({ listId, listName, users }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" title="Share list">
+        <Button variant="ghost" size="sm">
           <Share2 className="h-3.5 w-3.5" />
-          <span className="sr-only">Share</span>
+          <span className="sr-only">Share list</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Share &ldquo;{listName}&rdquo;</DialogTitle>
+          <DialogDescription>
+            Select a person and assign them a role to give them access to this list.
+          </DialogDescription>
         </DialogHeader>
         {users.length === 0 ? (
           <p className="text-sm text-muted-foreground py-2">
@@ -100,7 +104,11 @@ export default function ShareListDialog({ listId, listName, users }: Props) {
               </Select>
             </div>
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error}
+              </p>
+            )}
 
             <div className="flex justify-end gap-2 pt-2">
               <Button
