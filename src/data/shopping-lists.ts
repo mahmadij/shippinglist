@@ -201,6 +201,29 @@ export async function addListItem(
   return row;
 }
 
+export async function updateListItem(
+  listItemId: number,
+  quantity: string | null,
+  storeId: number | null,
+  userId: number,
+) {
+  const [member] = await db
+    .select({ role: listMembers.role })
+    .from(listMembers)
+    .innerJoin(listItems, eq(listItems.listId, listMembers.listId))
+    .where(and(eq(listItems.id, listItemId), eq(listMembers.userId, userId)));
+
+  if (!member || member.role === 'viewer') return null;
+
+  const [updated] = await db
+    .update(listItems)
+    .set({ quantity: quantity || null, storeId: storeId || null, updatedAt: new Date() })
+    .where(eq(listItems.id, listItemId))
+    .returning();
+
+  return updated ?? null;
+}
+
 export async function removeListItems(listItemIds: number[], userId: number) {
   if (listItemIds.length === 0) return;
 

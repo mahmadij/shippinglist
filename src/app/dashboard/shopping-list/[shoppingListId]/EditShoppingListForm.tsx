@@ -19,6 +19,7 @@ import { Separator } from '@/components/ui/separator';
 import ItemsEditor, {
   type NewItemEntry,
   type ExistingItemEntry,
+  type ExistingItemEdit,
   type AvailableItem,
   type AvailableStore,
 } from '@/components/shopping-list/ItemsEditor';
@@ -51,12 +52,20 @@ export default function EditShoppingListForm({
   const [ownerId, setOwnerId] = useState<number>(initialOwnerId);
   const [removedItemIds, setRemovedItemIds] = useState<number[]>([]);
   const [newItems, setNewItems] = useState<NewItemEntry[]>([]);
+  const [editedItems, setEditedItems] = useState<Map<number, ExistingItemEdit>>(new Map());
   const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     startTransition(async () => {
+      const itemsToUpdate = initialListItems
+        .filter((item) => !removedItemIds.includes(item.listItemId) && editedItems.has(item.listItemId))
+        .map((item) => {
+          const edits = editedItems.get(item.listItemId)!;
+          return { listItemId: item.listItemId, quantity: edits.quantity, storeId: edits.storeId };
+        });
+
       const result = await updateList(
         listId,
         name,
@@ -68,6 +77,7 @@ export default function EditShoppingListForm({
           quantity: item.quantity || null,
           storeId: item.storeId,
         })),
+        itemsToUpdate,
       );
       if (result.success) {
         router.push('/dashboard');
@@ -140,12 +150,16 @@ export default function EditShoppingListForm({
                 availableItems={availableItems}
                 availableStores={availableStores}
                 existingItems={initialListItems}
+                existingItemEdits={editedItems}
                 removedItemIds={removedItemIds}
                 newItems={newItems}
                 onNewItemsChange={setNewItems}
                 onRemoveExisting={(id) => setRemovedItemIds((prev) => [...prev, id])}
                 onRestoreExisting={(id) =>
                   setRemovedItemIds((prev) => prev.filter((x) => x !== id))
+                }
+                onUpdateExisting={(id, patch) =>
+                  setEditedItems((prev) => new Map(prev).set(id, patch))
                 }
                 disabled={isPending}
               />

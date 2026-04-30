@@ -48,15 +48,22 @@ export type ExistingItemEntry = {
   storeName: string | null;
 };
 
+export type ExistingItemEdit = {
+  quantity: string | null;
+  storeId: number | null;
+};
+
 interface Props {
   availableItems: AvailableItem[];
   availableStores: AvailableStore[];
   existingItems?: ExistingItemEntry[];
+  existingItemEdits?: Map<number, ExistingItemEdit>;
   removedItemIds?: number[];
   newItems: NewItemEntry[];
   onNewItemsChange: (items: NewItemEntry[]) => void;
   onRemoveExisting?: (listItemId: number) => void;
   onRestoreExisting?: (listItemId: number) => void;
+  onUpdateExisting?: (listItemId: number, patch: ExistingItemEdit) => void;
   disabled?: boolean;
 }
 
@@ -155,11 +162,13 @@ export default function ItemsEditor({
   availableItems,
   availableStores,
   existingItems = [],
+  existingItemEdits,
   removedItemIds = [],
   newItems,
   onNewItemsChange,
   onRemoveExisting,
   onRestoreExisting,
+  onUpdateExisting,
   disabled,
 }: Props) {
   const uid = useId();
@@ -196,6 +205,9 @@ export default function ItemsEditor({
       {/* Existing items (edit page) */}
       {existingItems.map((entry) => {
         const isRemoved = removedItemIds.includes(entry.listItemId);
+        const edits = existingItemEdits?.get(entry.listItemId);
+        const currentQuantity = edits !== undefined ? edits.quantity : (entry.quantity ?? null);
+        const currentStoreId = edits !== undefined ? edits.storeId : entry.storeId;
         return (
           <div
             key={entry.listItemId}
@@ -205,8 +217,48 @@ export default function ItemsEditor({
             )}
           >
             <span className="text-sm truncate px-1">{entry.itemName}</span>
-            <span className="text-sm px-1">{entry.quantity ?? '—'}</span>
-            <span className="text-sm px-1">{entry.storeName ?? '—'}</span>
+            {isRemoved ? (
+              <>
+                <span className="text-sm px-1">{currentQuantity ?? '—'}</span>
+                <span className="text-sm px-1">{entry.storeName ?? '—'}</span>
+              </>
+            ) : (
+              <>
+                <Input
+                  placeholder="Qty"
+                  value={currentQuantity ?? ''}
+                  onChange={(e) =>
+                    onUpdateExisting?.(entry.listItemId, {
+                      quantity: e.target.value || null,
+                      storeId: currentStoreId,
+                    })
+                  }
+                  disabled={disabled}
+                />
+                <Select
+                  value={currentStoreId?.toString() ?? '__none__'}
+                  onValueChange={(v) =>
+                    onUpdateExisting?.(entry.listItemId, {
+                      quantity: currentQuantity,
+                      storeId: v === '__none__' ? null : Number(v),
+                    })
+                  }
+                  disabled={disabled}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Any store" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Any store</SelectItem>
+                    {availableStores.map((s) => (
+                      <SelectItem key={s.id} value={s.id.toString()}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            )}
             {isRemoved ? (
               <Button
                 type="button"

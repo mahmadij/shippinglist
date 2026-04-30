@@ -8,6 +8,7 @@ import {
   updateListOwner,
   addListItem,
   removeListItems,
+  updateListItem,
 } from '@/data/shopping-lists';
 import { getOrCreateItem } from '@/data/items';
 
@@ -18,15 +19,23 @@ const itemEntrySchema = z.object({
   storeId: z.number().int().positive().nullable(),
 });
 
+const itemUpdateSchema = z.object({
+  listItemId: z.number().int().positive(),
+  quantity: z.string().max(50).nullable(),
+  storeId: z.number().int().positive().nullable(),
+});
+
 const updateListSchema = z.object({
   listId: z.number().int().positive(),
   name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or fewer'),
   ownerId: z.number().int().positive(),
   itemsToRemove: z.array(z.number().int().positive()),
   itemsToAdd: z.array(itemEntrySchema),
+  itemsToUpdate: z.array(itemUpdateSchema),
 });
 
 export type UpdateListItemInput = z.infer<typeof itemEntrySchema>;
+export type UpdateExistingItemInput = z.infer<typeof itemUpdateSchema>;
 
 export async function updateList(
   listId: number,
@@ -34,6 +43,7 @@ export async function updateList(
   ownerId: number,
   itemsToRemove: number[],
   itemsToAdd: UpdateListItemInput[],
+  itemsToUpdate: UpdateExistingItemInput[],
 ): Promise<{ success: true } | { success: false; error: string }> {
   const result = updateListSchema.safeParse({
     listId,
@@ -41,6 +51,7 @@ export async function updateList(
     ownerId,
     itemsToRemove,
     itemsToAdd,
+    itemsToUpdate,
   });
   if (!result.success) {
     return { success: false, error: result.error.issues[0].message };
@@ -58,6 +69,10 @@ export async function updateList(
 
   if (data.itemsToRemove.length > 0) {
     await removeListItems(data.itemsToRemove, userId);
+  }
+
+  for (const entry of data.itemsToUpdate) {
+    await updateListItem(entry.listItemId, entry.quantity, entry.storeId, userId);
   }
 
   for (const entry of data.itemsToAdd) {
