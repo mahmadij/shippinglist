@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShoppingCart } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,19 +18,28 @@ import {
 import { Separator } from '@/components/ui/separator';
 import ItemsEditor, {
   type NewItemEntry,
+  type ExistingItemEntry,
   type AvailableItem,
   type AvailableStore,
 } from '@/components/shopping-list/ItemsEditor';
-import { createList } from './actions';
+import { updateList } from './actions';
 
 interface Props {
+  listId: number;
+  initialName: string;
+  initialOwnerId: number;
+  initialListItems: ExistingItemEntry[];
   currentUserId: number;
   users: { id: number; displayName: string }[];
   availableItems: AvailableItem[];
   availableStores: AvailableStore[];
 }
 
-export default function NewShoppingListForm({
+export default function EditShoppingListForm({
+  listId,
+  initialName,
+  initialOwnerId,
+  initialListItems,
   currentUserId,
   users,
   availableItems,
@@ -38,8 +47,9 @@ export default function NewShoppingListForm({
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [name, setName] = useState('');
-  const [ownerId, setOwnerId] = useState<number>(currentUserId);
+  const [name, setName] = useState(initialName);
+  const [ownerId, setOwnerId] = useState<number>(initialOwnerId);
+  const [removedItemIds, setRemovedItemIds] = useState<number[]>([]);
   const [newItems, setNewItems] = useState<NewItemEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,15 +57,16 @@ export default function NewShoppingListForm({
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const result = await createList(
+      const result = await updateList(
+        listId,
         name,
         ownerId,
+        removedItemIds,
         newItems.map((item) => ({
           itemId: item.itemId,
           itemName: item.itemName,
           quantity: item.quantity || null,
           storeId: item.storeId,
-          storeName: null,
         })),
       );
       if (result.success) {
@@ -71,10 +82,10 @@ export default function NewShoppingListForm({
   return (
     <div className="flex flex-col gap-6 p-6 max-w-2xl mx-auto w-full">
       <div className="flex items-center gap-3">
-        <ShoppingCart className="h-7 w-7 text-muted-foreground" />
+        <Pencil className="h-7 w-7 text-muted-foreground" />
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">New Shopping List</h1>
-          <p className="text-sm text-muted-foreground">Create a new list to start adding items</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Edit Shopping List</h1>
+          <p className="text-sm text-muted-foreground">Update your shopping list details</p>
         </div>
       </div>
 
@@ -128,8 +139,14 @@ export default function NewShoppingListForm({
               <ItemsEditor
                 availableItems={availableItems}
                 availableStores={availableStores}
+                existingItems={initialListItems}
+                removedItemIds={removedItemIds}
                 newItems={newItems}
                 onNewItemsChange={setNewItems}
+                onRemoveExisting={(id) => setRemovedItemIds((prev) => [...prev, id])}
+                onRestoreExisting={(id) =>
+                  setRemovedItemIds((prev) => prev.filter((x) => x !== id))
+                }
                 disabled={isPending}
               />
             </div>
@@ -138,7 +155,7 @@ export default function NewShoppingListForm({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.back()}
                 disabled={isPending}
               >
                 Cancel
@@ -147,7 +164,7 @@ export default function NewShoppingListForm({
                 type="submit"
                 disabled={isPending || name.trim() === '' || hasIncompleteItem}
               >
-                {isPending ? 'Creating…' : 'Create list'}
+                {isPending ? 'Saving…' : 'Save changes'}
               </Button>
             </div>
           </form>
