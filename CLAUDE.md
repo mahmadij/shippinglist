@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **IMPORTANT:** Before generating any code, always check the `/docs` directory for relevant documentation files. If a `/docs` file covers the feature, API, or pattern you are implementing, you MUST read and follow it before writing any code:
+
+- /docs/ui.md
+- /docs/data-fetching.md
+
 @AGENTS.md
 
 ## Commands
