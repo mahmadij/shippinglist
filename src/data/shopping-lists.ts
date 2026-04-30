@@ -44,6 +44,7 @@ export async function getShoppingListsForUser(userId: number) {
       createdAt: shoppingLists.createdAt,
       updatedBy: updatedByUser.displayName,
       updatedAt: shoppingLists.updatedAt,
+      currentUserRole: listMembers.role,
     })
     .from(shoppingLists)
     .innerJoin(listMembers, eq(listMembers.listId, shoppingLists.id))
@@ -58,6 +59,7 @@ export async function getShoppingListsForUser(userId: number) {
       shoppingLists.updatedAt,
       createdByUser.displayName,
       updatedByUser.displayName,
+      listMembers.role,
     );
 
   return rows.map((row) => ({
@@ -222,6 +224,36 @@ export async function updateListItem(
     .returning();
 
   return updated ?? null;
+}
+
+export async function addMemberToList(
+  listId: number,
+  targetUserId: number,
+  role: 'editor' | 'viewer',
+  requestingUserId: number,
+) {
+  const [ownerRow] = await db
+    .select({ role: listMembers.role })
+    .from(listMembers)
+    .where(and(eq(listMembers.listId, listId), eq(listMembers.userId, requestingUserId)));
+
+  if (ownerRow?.role !== 'owner') return false;
+
+  const [existing] = await db
+    .select({ id: listMembers.id })
+    .from(listMembers)
+    .where(and(eq(listMembers.listId, listId), eq(listMembers.userId, targetUserId)));
+
+  if (existing) {
+    await db
+      .update(listMembers)
+      .set({ role })
+      .where(and(eq(listMembers.listId, listId), eq(listMembers.userId, targetUserId)));
+  } else {
+    await db.insert(listMembers).values({ listId, userId: targetUserId, role });
+  }
+
+  return true;
 }
 
 export async function removeListItems(listItemIds: number[], userId: number) {

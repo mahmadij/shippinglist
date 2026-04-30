@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { format, formatDistanceToNow, parseISO, isAfter, startOfDay } from 'date-fns';
 import { ShoppingCart, CalendarIcon, X, Pencil } from 'lucide-react';
+import ShareListDialog from '@/components/shopping-list/ShareListDialog';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -36,6 +37,7 @@ export type ShoppingListRow = {
   createdAt: string;
   updatedBy: string;
   updatedAt: string;
+  currentUserRole: 'owner' | 'editor' | 'viewer';
 };
 
 type Filters = {
@@ -53,9 +55,10 @@ const EMPTY_FILTERS: Filters = {
 type Props = {
   lists: ShoppingListRow[];
   allUsers: string[];
+  shareableUsers: { id: number; displayName: string }[];
 };
 
-export default function DashboardClient({ lists, allUsers }: Props) {
+export default function DashboardClient({ lists, allUsers, shareableUsers }: Props) {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
 
   const filtered = lists.filter((list) => {
@@ -236,12 +239,21 @@ export default function DashboardClient({ lists, allUsers }: Props) {
                       </span>
                     </TableCell>
                     <TableCell className="pr-4">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/dashboard/shopping-list/${list.id}`}>
-                          <Pencil className="h-3.5 w-3.5" />
-                          <span className="sr-only">Edit</span>
-                        </Link>
-                      </Button>
+                      <div className="flex items-center gap-1 justify-end">
+                        {list.currentUserRole === 'owner' && (
+                          <ShareListDialog
+                            listId={list.id}
+                            listName={list.name}
+                            users={shareableUsers}
+                          />
+                        )}
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/dashboard/shopping-list/${list.id}`}>
+                            <Pencil className="h-3.5 w-3.5" />
+                            <span className="sr-only">Edit</span>
+                          </Link>
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
